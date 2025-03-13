@@ -131,7 +131,7 @@ const RegistroAsistencia = () => {
                                 <td>{registro.fecha}</td>
                                 <td>{registro.hora_entrada}</td>
                                 <td>{registro.hora_salida || '-'}</td>
-                                <td>{registro.tiempo_trabajado || '---'}</td>
+                                {/* <td>{registro.tiempo_trabajado || '---'}</td> */}
                             </tr>
                         ))}
                     </tbody>
