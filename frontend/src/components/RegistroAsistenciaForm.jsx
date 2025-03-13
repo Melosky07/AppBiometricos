@@ -3,7 +3,7 @@ import axios from 'axios';
 import './RegistroAsistencia.css';
 
 const API = 'http://localhost:8000/registros/';
-const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
+// const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
 const REPORT_URL = 'http://localhost:8000/reporte-excel/';
 // const API = 'http://localhost:8000/datos/';
 

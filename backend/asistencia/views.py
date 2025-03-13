@@ -68,20 +68,20 @@ def obtener_datos(request):
         return JsonResponse({'error': 'No se pudo cargar el archivo Excel'}, status=500)
     
 
-def buscar_persona(request):
-    nit = request.GET.get('nit')
-    if not nit:
-        return JsonResponse({'error': 'El NIT es obligatorio'}, status=400)
+# def buscar_nit(request):
+#     nit = request.GET.get('nit')
+#     if not nit:
+#         return JsonResponse({'error': 'El NIT es obligatorio'}, status=400)
 
-    try:
-        df = pd.read_excel(EXCEL_FILE_PATH)
-        persona = df.loc[df['Documento'] == int(nit)].to_dict(orient='records')
-        if persona:
-            return JsonResponse(persona[0])
-        else:
-            return JsonResponse({'error': 'No se encontró información para el NIT ingresado'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': f'Error al buscar en el archivo: {str(e)}'}, status=500)
+#     try:
+#         df = pd.read_excel(EXCEL_FILE_PATH)
+#         persona = df.loc[df['nit'] == int(nit)].to_dict(orient='records')
+#         if persona:
+#             return JsonResponse(persona[0])
+#         else:
+#             return JsonResponse({'error': 'No se encontró información para el NIT ingresado'}, status=404)
+#     except Exception as e:
+#         return JsonResponse({'error': f'Error al buscar en el archivo: {str(e)}'}, status=500)
 
 
 def exportar_reporte_excel(request):
