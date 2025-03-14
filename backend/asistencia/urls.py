@@ -10,4 +10,4 @@ urlpatterns = [
     path('reporte-excel/', exportar_reporte_excel, name='exportar_reporte_excel'),
     path('datos/', obtener_datos, name='obtener_datos'),
     # path('buscar-nit/', buscar_nit, name='buscar_nit'),
-]
+    ]

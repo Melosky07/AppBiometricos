@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './RegistroAsistencia.css';
 
-// const API = 'http://localhost:8000/registros/';
-// const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
+const API = 'http://localhost:8000/registros/';
+const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
 const REPORT_URL = 'http://localhost:8000/reporte-excel/';
-const API = 'http://localhost:8000/datos/';
+// const API = 'http://localhost:8000/datos/';
 
 
 const RegistroAsistencia = () => {
@@ -15,7 +15,6 @@ const RegistroAsistencia = () => {
     const [registros, setRegistros] = useState([]);
     const [resumen, setResumen] = useState('');
     const [miniVista, setMiniVista] = useState([]); // ✅ Mini vista para mostrar el último registro
-    
 
     const fetchData = async () => {
         try {
@@ -124,7 +123,7 @@ const RegistroAsistencia = () => {
                     </thead>
                     <tbody>
                         {registros.map((registro) => (
-                            <tr key={registro.NIT}>
+                            <tr key={registro.id}>
                                 <td>{registro.NIT}</td>
                                 <td>{registro.Nombre}</td>
                                 <td>{registro.Nombre_Dependencia}</td>
