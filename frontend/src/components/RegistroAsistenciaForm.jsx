@@ -5,25 +5,27 @@ import './RegistroAsistencia.css';
 const API = 'http://localhost:8000/registros/';
 const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
 const REPORT_URL = 'http://localhost:8000/reporte-excel/';
-// const API = 'http://localhost:8000/datos/';
-
 
 const RegistroAsistencia = () => {
+    const [nit, setNit] = useState('');
     const [nombre, setNombre] = useState('');
+    const [dependencia, setDependencia] = useState('');
+    const [cargo, setCargo] = useState('');
     const [mensaje, setMensaje] = useState('');
     const [error, setError] = useState('');
     const [registros, setRegistros] = useState([]);
     const [resumen, setResumen] = useState('');
-    const [miniVista, setMiniVista] = useState([]); // ✅ Mini vista para mostrar el último registro
+    const [miniVista, setMiniVista] = useState([]);
 
+    // ✅ Cargar datos iniciales
     const fetchData = async () => {
         try {
             const res = await axios.get(API);
             setRegistros(res.data);
 
-            const resumenData = await axios.get('/api/asistencia/', { nombre })
+            const resumenData = await axios.get('/api/asistencia/')
                 .catch(() => ({ data: { total_horas_semanales: 'No disponible' } }));
-            
+
             setResumen(resumenData.data.total_horas_semanales);
         } catch (err) {
             setError('Error al cargar datos');
@@ -34,49 +36,71 @@ const RegistroAsistencia = () => {
         fetchData();
     }, []);
 
+    // ✅ Buscar automáticamente cuando cambia el valor de `nit`
+    useEffect(() => {
+        if (nit) {
+            buscarPersona(nit);
+        }
+    }, [nit]);
+
+    // ✅ Buscar información por NIT (Ahora usa 'NIT' en mayúsculas)
+    const buscarPersona = async (nit) => {
+        if (!nit.trim()) {
+            setError('El NIT es obligatorio');
+            return;
+        }
+
+        try {
+            const response = await axios.get(`${SEARCH_URL}`, { params: { NIT: nit } }); // ✅ NIT en mayúsculas
+            setNombre(response.data.Nombre || '');
+            setDependencia(response.data.Dependencia || '');
+            setCargo(response.data.Cargo || '');
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Error al buscar información');
+            setNombre('');
+            setDependencia('');
+            setCargo('');
+        }
+    };
+
+    // ✅ Registrar asistencia (Ahora envía 'NIT' en mayúsculas)
     const enviarRegistroAsistencia = async () => {
         setMensaje('');
         setError('');
-    
-        if (!nombre.trim()) {
-            setError('El nombre es obligatorio');
+
+        if (!nit.trim()) {
+            setError('El NIT es obligatorio');
             return;
         }
-    
+
         try {
-            const response = await axios.post(API, { nombre });
+            const response = await axios.post(API, { NIT: nit }); // ✅ NIT en mayúsculas
             setMensaje(response.data.mensaje);
-    
-            // ✅ Actualiza la tabla con todos los registros
             setRegistros(response.data.registros);
-    
-            // ✅ Busca el registro específico por el nombre ingresado
-            const registroActualizado = response.data.registros.find(
-                (registro) => registro.persona_nombre === nombre
-            );
-    
-            // ✅ Si lo encuentra, lo muestra en la mini vista
-            if (registroActualizado) {
-                setMiniVista([registroActualizado]);
-            } else {
-                // ✅ Si no lo encuentra, toma el último registro como respaldo
-                const ultimoRegistro = response.data.registros.slice(-1)[0];
+
+            // ✅ Mostrar el último registro en la mini vista
+            const ultimoRegistro = response.data.registros.slice(-1)[0];
+            if (ultimoRegistro) {
                 setMiniVista([ultimoRegistro]);
             }
-    
+
+            // ✅ Limpiar campos después de registrar
+            setNit('');
             setNombre('');
+            setDependencia('');
+            setCargo('');
         } catch (error) {
             setError(`Error: ${error.response?.data?.detail || 'Error al registrar'}`);
         }
     };
-        
-    
 
     const handleSubmit = (e) => {
         e.preventDefault();
         enviarRegistroAsistencia();
     };
 
+    // ✅ Descargar reporte en Excel
     const descargarExcel = () => {
         window.open(REPORT_URL, '_blank');
     };
@@ -88,9 +112,9 @@ const RegistroAsistencia = () => {
                 <form onSubmit={handleSubmit} className="form">
                     <input
                         type="text"
-                        placeholder="Ingresa tu nombre"
-                        value={nombre}
-                        onChange={(e) => setNombre(e.target.value)}
+                        placeholder="Ingrese el NIT"
+                        value={nit}
+                        onChange={(e) => setNit(e.target.value)}
                         className="input"
                     />
                     <button type="submit" className="button">Registrar</button>
@@ -111,19 +135,18 @@ const RegistroAsistencia = () => {
                 <table className="table">
                     <thead>
                         <tr>
-                            <th>Nit</th>
+                            <th>NIT</th>
                             <th>Nombre</th>
                             <th>Departamento</th>
                             <th>Cargo</th>
                             <th>Fecha</th>
                             <th>Hora Entrada</th>
                             <th>Hora Salida</th>
-                            {/* <th>Tiempo Trabajado</th> */}
                         </tr>
                     </thead>
                     <tbody>
                         {registros.map((registro) => (
-                            <tr key={registro.id}>
+                            <tr key={registro.NIT || registro.id}>
                                 <td>{registro.NIT}</td>
                                 <td>{registro.Nombre}</td>
                                 <td>{registro.Nombre_Dependencia}</td>
@@ -131,7 +154,6 @@ const RegistroAsistencia = () => {
                                 <td>{registro.fecha}</td>
                                 <td>{registro.hora_entrada}</td>
                                 <td>{registro.hora_salida || '-'}</td>
-                                {/* <td>{registro.tiempo_trabajado || '---'}</td> */}
                             </tr>
                         ))}
                     </tbody>
@@ -139,18 +161,20 @@ const RegistroAsistencia = () => {
             </div>
 
             {/* ✅ Mini vista solo con el último registro */}
-
-            <div className="mini-vista">
-                <h4>Último Registro</h4>
-                {miniVista?.length > 0 && miniVista.map((registro) => (
-                    <div key={registro.id} className="registro-item">
-                        <p><strong>Nombre:</strong> {registro.persona_nombre}</p>
-                        <p><strong>Hora Entrada:</strong> {registro.hora_entrada}</p>
-                        <p><strong>Hora Salida:</strong> {registro.hora_salida || '-'}</p>
-                        <hr />
-                    </div>
-                ))}
-            </div>
+            {miniVista.length > 0 && (
+                <div className="mini-vista">
+                    <h4>Último Registro</h4>
+                    {miniVista.map((registro) => (
+                        <div key={registro.id} className="registro-item">
+                            <p><strong>NIT:</strong> {registro.NIT}</p>
+                            <p><strong>Nombre:</strong> {registro.persona_nombre}</p>
+                            <p><strong>Hora Entrada:</strong> {registro.hora_entrada}</p>
+                            <p><strong>Hora Salida:</strong> {registro.hora_salida || '-'}</p>
+                            <hr />
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

@@ -9,6 +9,7 @@ import logging
 import pandas as pd
 from django.http import JsonResponse
 import os
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -67,22 +68,20 @@ def obtener_datos(request):
     else:
         return JsonResponse({'error': 'No se pudo cargar el archivo Excel'}, status=500)
     
+def buscar_persona(request):
+    nit = request.GET.get('NIT')
+    if not nit:
+        return JsonResponse({'error': 'El NIT es obligatorio'}, status=400)
 
-# def buscar_nit(request):
-#     nit = request.GET.get('nit')
-#     if not nit:
-#         return JsonResponse({'error': 'El NIT es obligatorio'}, status=400)
-
-#     try:
-#         df = pd.read_excel(EXCEL_FILE_PATH)
-#         persona = df.loc[df['nit'] == int(nit)].to_dict(orient='records')
-#         if persona:
-#             return JsonResponse(persona[0])
-#         else:
-#             return JsonResponse({'error': 'No se encontró información para el NIT ingresado'}, status=404)
-#     except Exception as e:
-#         return JsonResponse({'error': f'Error al buscar en el archivo: {str(e)}'}, status=500)
-
+    try:
+        df = pd.read_excel(EXCEL_FILE_PATH)
+        persona = df.loc[df['NIT'] == int(nit)].to_dict(orient='records')
+        if persona:
+            return JsonResponse(persona[0])
+        else:
+            return JsonResponse({'error': 'No se encontró información para el NIT ingresado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Error al buscar en el archivo: {str(e)}'}, status=500)    
 
 def exportar_reporte_excel(request):
     response = HttpResponse(
