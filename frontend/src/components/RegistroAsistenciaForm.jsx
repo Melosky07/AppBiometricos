@@ -150,9 +150,9 @@ const RegistroAsistencia = () => {
                         {registros.map((registro) => (
                             <tr key={registro.NIT || registro.id}>
                                 <td>{registro.NIT}</td>
-                                <td>{registro.Nombre}</td>
-                                <td>{registro.Nombre_Dependencia}</td>
-                                <td>{registro.Nombre_Cargo}</td>
+                                <td>{registro.nombre}</td>
+                                <td>{registro.Dependencia}</td>
+                                <td>{registro.Cargo}</td>
                                 <td>{registro.fecha}</td>
                                 <td>{registro.hora_entrada}</td>
                                 <td>{registro.hora_salida || '-'}</td>

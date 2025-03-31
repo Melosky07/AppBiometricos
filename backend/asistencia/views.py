@@ -9,7 +9,7 @@ import logging
 import pandas as pd
 from django.http import JsonResponse
 import os
-from django.conf import settings
+# from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,43 +20,101 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
     queryset = RegistroAsistencia.objects.all()
     serializer_class = RegistroAsistenciaSerializer
 
+    # def create(self, request, *args, **kwargs):
+    #     try:
+    #         logger.info(f"Request data: {request.data}")
+    #         nit = request.data.get('NIT')
+    #         if not nit:
+    #             return Response({"error": "El NIT es obligatorio"}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     # ✅ Intentar leer el archivo Excel
+    #         try:
+    #             df = pd.read_excel(EXCEL_FILE_PATH, engine='openpyxl')
+    #         except Exception as e:
+    #             logger.error(f"Error al leer el archivo Excel: {str(e)}")
+    #             return Response({"error": "Error al leer la base de datos (Excel)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    #     # ✅ Asegurar que la columna NIT existe
+    #         if 'NIT' not in df.columns or 'Nombre' not in df.columns:
+    #             logger.error("El archivo Excel no tiene las columnas correctas")
+    #             return Response({"error": "Archivo Excel incorrecto. Faltan columnas 'NIT' o 'Nombre'."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    #     # ✅ Convertir NIT a string en caso de que haya tipos mezclados
+    #         df['NIT'] = df['NIT'].astype(str)
+
+    #     # ✅ Buscar persona en el Excel
+    #         persona_data = df.loc[df['NIT'] == str(nit)].to_dict(orient='records')
+
+    #         if not persona_data:
+    #             return Response({"error": "No se encontró información para el NIT ingresado"}, status=status.HTTP_404_NOT_FOUND)
+
+    #         nombre = persona_data[0]['Nombre']
+
+    #     # ✅ Crear o buscar persona en la BD
+    #         persona, created = Persona.objects.get_or_create(nombre=nombre)
+
+    #         hoy = now().date()
+
+    #         registro = RegistroAsistencia.objects.filter(
+    #             persona=persona,
+    #             fecha=hoy,
+    #             hora_salida__isnull=True
+    #         ).first()
+
+    #         if registro:
+    #             registro.hora_salida = localtime(now()).time()
+    #             registro.save()
+    #             mensaje = f"Salida registrada para {nombre}"
+    #         else:
+    #             RegistroAsistencia.objects.create(
+    #                 persona=persona,
+    #                 hora_entrada=localtime(now()).time()
+    #             )
+    #             mensaje = f"Entrada registrada para {nombre}"
+
+    #         registros = RegistroAsistencia.objects.all()
+    #         serializer = self.get_serializer(registros, many=True)
+    #         return Response({"mensaje": mensaje, "registros": serializer.data}, status=status.HTTP_201_CREATED)
+
+    #     except Exception as e:
+    #         logger.error(f"Error en el backend: {str(e)}")
+    #         return Response({"error": "Error interno en el servidor"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
     def create(self, request, *args, **kwargs):
         try:
             logger.info(f"Request data: {request.data}")
-
             nit = request.data.get('NIT')
-
             if not nit:
                 return Response({"error": "El NIT es obligatorio"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # ✅ Intentar leer el archivo Excel
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, engine='openpyxl')
             except Exception as e:
                 logger.error(f"Error al leer el archivo Excel: {str(e)}")
                 return Response({"error": "Error al leer la base de datos (Excel)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # ✅ Asegurar que la columna NIT existe
             if 'NIT' not in df.columns or 'Nombre' not in df.columns:
                 logger.error("El archivo Excel no tiene las columnas correctas")
                 return Response({"error": "Archivo Excel incorrecto. Faltan columnas 'NIT' o 'Nombre'."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # ✅ Convertir NIT a string en caso de que haya tipos mezclados
             df['NIT'] = df['NIT'].astype(str)
-
-        # ✅ Buscar persona en el Excel
             persona_data = df.loc[df['NIT'] == str(nit)].to_dict(orient='records')
 
             if not persona_data:
                 return Response({"error": "No se encontró información para el NIT ingresado"}, status=status.HTTP_404_NOT_FOUND)
 
             nombre = persona_data[0]['Nombre']
+            cargo = persona_data[0].get('Nombre Cargo', '')  # Obtener cargo del Excel
+            dependencia = persona_data[0].get('Nombre Dependencia', '')  # Obtener dependencia del Excel
 
-        # ✅ Crear o buscar persona en la BD
-            persona, created = Persona.objects.get_or_create(nombre=nombre)
+        # Crear o actualizar la persona con cargo y dependencia
+            persona, created = Persona.objects.update_or_create(
+                nombre=nombre,
+                defaults={'cargo': cargo, 'dependencia': dependencia}
+            )
 
             hoy = now().date()
-
             registro = RegistroAsistencia.objects.filter(
                 persona=persona,
                 fecha=hoy,
@@ -81,7 +139,6 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Error en el backend: {str(e)}")
             return Response({"error": "Error interno en el servidor"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 def cargar_datos_excel():
     try:
