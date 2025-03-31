@@ -21,36 +21,67 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
     serializer_class = RegistroAsistenciaSerializer
 
     def create(self, request, *args, **kwargs):
-        logger.info(f"Request data: {request.data}")
-        nombre = request.data.get('nombre')
+        try:
+            logger.info(f"Request data: {request.data}")
 
-        if not nombre:
-            return Response({"error": "El nombre es obligatorio"}, status=status.HTTP_400_BAD_REQUEST)
+            nit = request.data.get('NIT')
 
-        persona, created = Persona.objects.get_or_create(nombre=nombre)
+            if not nit:
+                return Response({"error": "El NIT es obligatorio"}, status=status.HTTP_400_BAD_REQUEST)
 
-        hoy = now().date()
+        # ✅ Intentar leer el archivo Excel
+            try:
+                df = pd.read_excel(EXCEL_FILE_PATH, engine='openpyxl')
+            except Exception as e:
+                logger.error(f"Error al leer el archivo Excel: {str(e)}")
+                return Response({"error": "Error al leer la base de datos (Excel)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        registro = RegistroAsistencia.objects.filter(
-            persona=persona,
-            fecha=hoy,
-            hora_salida__isnull=True
-        ).first()
+        # ✅ Asegurar que la columna NIT existe
+            if 'NIT' not in df.columns or 'Nombre' not in df.columns:
+                logger.error("El archivo Excel no tiene las columnas correctas")
+                return Response({"error": "Archivo Excel incorrecto. Faltan columnas 'NIT' o 'Nombre'."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        if registro:
-            registro.hora_salida = localtime(now()).time()
-            registro.save()
-            mensaje = f"Salida registrada para {nombre}"
-        else:
-            RegistroAsistencia.objects.create(
+        # ✅ Convertir NIT a string en caso de que haya tipos mezclados
+            df['NIT'] = df['NIT'].astype(str)
+
+        # ✅ Buscar persona en el Excel
+            persona_data = df.loc[df['NIT'] == str(nit)].to_dict(orient='records')
+
+            if not persona_data:
+                return Response({"error": "No se encontró información para el NIT ingresado"}, status=status.HTTP_404_NOT_FOUND)
+
+            nombre = persona_data[0]['Nombre']
+
+        # ✅ Crear o buscar persona en la BD
+            persona, created = Persona.objects.get_or_create(nombre=nombre)
+
+            hoy = now().date()
+
+            registro = RegistroAsistencia.objects.filter(
                 persona=persona,
-                hora_entrada=localtime(now()).time()
-            )
-            mensaje = f"Entrada registrada para {nombre}"
+                fecha=hoy,
+                hora_salida__isnull=True
+            ).first()
 
-        registros = RegistroAsistencia.objects.all()
-        serializer = self.get_serializer(registros, many=True)
-        return Response({"mensaje": mensaje, "registros": serializer.data}, status=status.HTTP_201_CREATED)
+            if registro:
+                registro.hora_salida = localtime(now()).time()
+                registro.save()
+                mensaje = f"Salida registrada para {nombre}"
+            else:
+                RegistroAsistencia.objects.create(
+                    persona=persona,
+                    hora_entrada=localtime(now()).time()
+                )
+                mensaje = f"Entrada registrada para {nombre}"
+
+            registros = RegistroAsistencia.objects.all()
+            serializer = self.get_serializer(registros, many=True)
+            return Response({"mensaje": mensaje, "registros": serializer.data}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Error en el backend: {str(e)}")
+            return Response({"error": "Error interno en el servidor"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 def cargar_datos_excel():
     try:

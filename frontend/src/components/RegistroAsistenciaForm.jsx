@@ -74,6 +74,8 @@ const RegistroAsistencia = () => {
             return;
         }
 
+        console.log("Datos enviados:", { NIT: nit });
+
         try {
             const response = await axios.post(API, { NIT: nit }); // ✅ NIT en mayúsculas
             setMensaje(response.data.mensaje);
