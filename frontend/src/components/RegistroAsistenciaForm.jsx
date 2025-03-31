@@ -149,7 +149,7 @@ const RegistroAsistencia = () => {
                     <tbody>
                         {registros.map((registro) => (
                             <tr key={registro.NIT || registro.id}>
-                                <td>{registro.NIT}</td>
+                                <td>{registro.nit}</td>
                                 <td>{registro.persona_nombre}</td>
                                 <td>{registro.dependencia}</td>
                                 <td>{registro.cargo}</td>
@@ -168,7 +168,7 @@ const RegistroAsistencia = () => {
                     <h4>Último Registro</h4>
                     {miniVista.map((registro) => (
                         <div key={registro.id} className="registro-item">
-                            <p><strong>NIT:</strong> {registro.NIT}</p>
+                            {/* <p><strong>NIT:</strong> {registro.nit}</p> */}
                             <p><strong>Nombre:</strong> {registro.persona_nombre}</p>
                             <p><strong>Hora Entrada:</strong> {registro.hora_entrada}</p>
                             <p><strong>Hora Salida:</strong> {registro.hora_salida || '-'}</p>

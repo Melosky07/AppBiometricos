@@ -8,10 +8,11 @@ class RegistroAsistenciaSerializer(serializers.ModelSerializer):
     tiempo_trabajado = serializers.SerializerMethodField()
     cargo = serializers.CharField(source='persona.cargo', read_only=True)
     dependencia = serializers.CharField(source='persona.dependencia', read_only=True)
+    nit = serializers.CharField(source='persona.nit', read_only=True)
 
     class Meta:
         model = RegistroAsistencia
-        fields = ['id', 'fecha', 'hora_entrada', 'hora_salida', 'tiempo_trabajado', 'persona_nombre', 'cargo', 'dependencia']
+        fields = ['id', 'fecha', 'hora_entrada', 'hora_salida', 'tiempo_trabajado', 'persona_nombre', 'cargo', 'dependencia', 'nit']
 
 
     def get_hora_entrada(self, obj):
