@@ -118,13 +118,16 @@ def exportar_reporte_excel(request):
     )
 
     writer = csv.writer(response)
-    writer.writerow(['Nombre', 'Fecha', 'Hora Entrada', 'Hora Salida', 'Tiempo Trabajado'])
+    writer.writerow(['NIT', 'Nombre', 'Cargo', 'Dependencia', 'Fecha', 'Hora Entrada', 'Hora Salida', 'Tiempo Trabajado'])
 
     registros = RegistroAsistencia.objects.select_related('persona').all()
 
     for registro in registros:
         writer.writerow([
+            registro.persona.nit,
             registro.persona.nombre,
+            registro.persona.cargo,
+            registro.persona.dependencia,
             registro.fecha,
             registro.hora_entrada.strftime('%H:%M:%S'),
             registro.hora_salida.strftime('%H:%M:%S') if registro.hora_salida else '',

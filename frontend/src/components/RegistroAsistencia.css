@@ -1,6 +1,6 @@
 /* Contenedor principal */
 .container {
-    width: 100vw;
+    width: 99vw;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -96,7 +96,7 @@
 /* Tabla */
 .table-container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 100%;
     overflow-x: auto;
     background-color: #fff;
     padding: 20px;

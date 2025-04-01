@@ -129,8 +129,6 @@ const RegistroAsistencia = () => {
                 <button onClick={descargarExcel} className="download-button">
                     Descargar Reporte Excel
                 </button>
-
-                <h3 className="resumen">Resumen Semanal: {resumen}</h3>
             </div>
 
             {/* ✅ Tabla completa */}
@@ -138,10 +136,10 @@ const RegistroAsistencia = () => {
                 <table className="table">
                     <thead>
                         <tr>
-                            <th>NIT</th>
+                            {/* <th>NIT</th> */}
                             <th>Nombre</th>
-                            <th>Departamento</th>
-                            <th>Cargo</th>
+                            {/* <th>Departamento</th> */}
+                            {/* <th>Cargo</th> */}
                             <th>Fecha</th>
                             <th>Hora Entrada</th>
                             <th>Hora Salida</th>
@@ -150,10 +148,10 @@ const RegistroAsistencia = () => {
                     <tbody>
                         {registros.map((registro) => (
                             <tr key={registro.NIT || registro.id}>
-                                <td>{registro.nit}</td>
+                                {/* <td>{registro.nit}</td> */}
                                 <td>{registro.persona_nombre}</td>
-                                <td>{registro.dependencia}</td>
-                                <td>{registro.cargo}</td>
+                                {/* <td>{registro.dependencia}</td>
+                                <td>{registro.cargo}</td> */}
                                 <td>{registro.fecha}</td>
                                 <td>{registro.hora_entrada}</td>
                                 <td>{registro.hora_salida || '-'}</td>
