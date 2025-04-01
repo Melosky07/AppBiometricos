@@ -146,7 +146,7 @@ const RegistroAsistencia = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {registros.map((registro) => (
+                        {registros.slice(-10).map((registro) => (
                             <tr key={registro.NIT || registro.id}>
                                 {/* <td>{registro.nit}</td> */}
                                 <td>{registro.persona_nombre}</td>
