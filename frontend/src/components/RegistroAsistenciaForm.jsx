@@ -82,7 +82,8 @@ const RegistroAsistencia = () => {
             setRegistros(response.data.registros);
 
             // ✅ Mostrar el último registro en la mini vista
-            const ultimoRegistro = response.data.registros.slice(-1)[0];
+            // const ultimoRegistro = response.data.registros.slice(-1)[0];
+            const ultimoRegistro = response.data.registros.filter(reg => reg.nit === nit).slice(-1)[0];
             if (ultimoRegistro) {
                 setMiniVista([ultimoRegistro]);
             }
