@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from django.utils.timezone import localtime, now
+from django.utils.timezone import localtime, now, localdate
 from .models import Persona, RegistroAsistencia
 from .serializers import RegistroAsistenciaSerializer
 import csv
@@ -140,5 +140,33 @@ def exportar_reporte_excel(request):
             registro.hora_salida.strftime('%H:%M:%S') if registro.hora_salida else '',
             registro.tiempo_trabajado(), 
         ])
+
+    return response
+
+def generar_reporte_ausentes(request):
+    hoy = localdate()
+
+    personas_presentes = RegistroAsistencia.objects.filter(fecha=hoy).values_list('persona__nit', flat=True).distinct()
+    personas_ausentes = Persona.objects.exclude(nit__in=personas_presentes)
+
+    data = [
+        {
+            'NIT': persona.nit,
+            'Nombre': persona.nombre,
+            'Cargo': persona.cargo,
+            'Dependencia': persona.dependencia,
+            'Estado': 'AUSENTE',
+            'Fecha': hoy.strftime("%Y-%m-%d")
+        }
+        for persona in personas_ausentes
+    ]
+
+    df = pd.DataFrame(data)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=ausentes_{hoy.strftime("%Y%m%d")}.xlsx'
+
+    with pd.ExcelWriter(response, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Ausentes')
 
     return response

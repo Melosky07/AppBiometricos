@@ -5,6 +5,8 @@ import './RegistroAsistencia.css';
 const API = 'http://localhost:8000/registros/';
 const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
 const REPORT_URL = 'http://localhost:8000/reporte-excel/';
+const AUSENTES_URL = 'http://localhost:8000/reporte-ausentes/';
+
 
 const RegistroAsistencia = () => {
     const [nit, setNit] = useState('');
@@ -212,6 +214,10 @@ const RegistroAsistencia = () => {
         window.open(REPORT_URL, '_blank');
     };
 
+    const descargarAusentes = () => {
+        window.open(AUSENTES_URL, '_blank');
+    };
+
     return (
         <div className="container">
             <div className="form-container">
@@ -262,6 +268,11 @@ const RegistroAsistencia = () => {
                 <button onClick={descargarExcel} className="download-button">
                     Descargar Reporte Excel
                 </button>
+
+                <button onClick={descargarAusentes} className="download-button">
+                    Descargar Ausentes (Hoy)
+                </button>
+
             </div>
 
             {/* ✅ Tabla completa */}
