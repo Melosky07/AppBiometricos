@@ -41,12 +41,14 @@ class RegistroAsistenciaViewSet(viewsets.ModelViewSet):
             persona_data = df.loc[df['NIT'] == str(nit)].to_dict(orient='records')
 
             if not persona_data:
-                return Response({"error": "No se encontró información para el NIT ingresado"}, status=status.HTTP_404_NOT_FOUND)
-
-            nombre = persona_data[0]['Nombre']
-            cargo = persona_data[0].get('Nombre Cargo', '')  # Obtener cargo del Excel
-            dependencia = persona_data[0].get('Nombre Dependencia', '')  # Obtener dependencia del Excel
-            nit = persona_data[0].get('NIT', '')
+                nombre = "No Registra"
+                cargo = "No Registra"
+                dependencia = "No Registra"
+            else:
+                nombre = persona_data[0].get('Nombre', 'No Registra')
+                cargo = persona_data[0].get('Nombre Cargo', 'No Registra')
+                dependencia = persona_data[0].get('Nombre Dependencia', 'No Registra')
+                nit = str(nit)
 
         # Crear o actualizar la persona con cargo y dependencia
             persona, created = Persona.objects.update_or_create(
@@ -107,7 +109,12 @@ def buscar_persona(request):
         if persona:
             return JsonResponse(persona[0])
         else:
-            return JsonResponse({'error': 'No se encontró información para el NIT ingresado'}, status=404)
+            return JsonResponse({
+                'Nombre': 'No Registra',
+                'Nombre Cargo': 'No Registra',
+                'Nombre Dependencia': 'No Registra',
+                'NIT': nit
+            })
     except Exception as e:
         return JsonResponse({'error': f'Error al buscar en el archivo: {str(e)}'}, status=500)    
 
