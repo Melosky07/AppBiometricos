@@ -248,3 +248,68 @@ def generar_reporte_ausencias_semanal(request):
     response['Content-Disposition'] = f'attachment; filename={nombre_archivo}'
     return response
 
+def generar_reporte_ausencias_historico(request):
+    hoy = localdate()
+    personas = Persona.objects.all()
+    fechas_registradas = RegistroAsistencia.objects.values_list('fecha', flat=True).distinct().order_by('fecha')
+    data = []
+
+    for persona in personas:
+        for fecha in fechas_registradas:
+            registros = RegistroAsistencia.objects.filter(persona=persona, fecha=fecha)
+            if registros.exists():
+                registro = registros.first()
+                entrada = registro.hora_entrada.strftime('%H:%M') if registro.hora_entrada else ''
+                salida = registro.hora_salida.strftime('%H:%M') if registro.hora_salida else ''
+                tiempo_trabajado = ''
+                if registro.hora_entrada and registro.hora_salida:
+                    entrada_dt = datetime.combine(fecha, registro.hora_entrada)
+                    salida_dt = datetime.combine(fecha, registro.hora_salida)
+                    duracion = salida_dt - entrada_dt
+                    total_segundos = int(duracion.total_seconds())
+                    horas = total_segundos // 3600
+                    minutos = (total_segundos % 3600) // 60
+                    tiempo_trabajado = f"{horas}h {minutos}min"
+                else:
+                    tiempo_trabajado = "0h 0min"
+                
+                data.append({
+                    'Fecha': fecha.strftime("%Y-%m-%d"),
+                    'NIT': persona.nit,
+                    'Nombre': persona.nombre,
+                    'Cargo': persona.cargo,
+                    'Dependencia': persona.dependencia,
+                    'Hora Entrada': entrada,
+                    'Hora Salida': salida,
+                    'Horas Trabajadas': tiempo_trabajado
+                })
+            else:
+                data.append({
+                    'Fecha': fecha.strftime("%Y-%m-%d"),
+                    'NIT': persona.nit,
+                    'Nombre': persona.nombre,
+                    'Cargo': persona.cargo,
+                    'Dependencia': persona.dependencia,
+                    'Hora Entrada': '',
+                    'Hora Salida': '',
+                    'Horas Trabajadas': '❌ AUSENTE'
+                })
+
+    df = pd.DataFrame(data)
+
+    output = BytesIO()
+    df.to_excel(output, index=False)
+    output.seek(0)
+    
+
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    nombre_archivo = f"ausentes_historico_al_{hoy.strftime('%Y-%m-%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename={nombre_archivo}'
+
+    with pd.ExcelWriter(response, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Ausentes Históricos')
+
+    return response

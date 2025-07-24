@@ -7,7 +7,7 @@ const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
 const REPORT_URL = 'http://localhost:8000/reporte-excel/';
 const AUSENTES_URL = 'http://localhost:8000/reporte-ausentes/';
 const AUSENCIAS_SEMANA_URL = 'http://localhost:8000/reporte-ausencias-semanal/';
-
+const AUSENCIAS_HISTORICO_URL = 'http://localhost:8000/reporte-ausencias-historico/';
 
 const RegistroAsistencia = () => {
     const [nit, setNit] = useState('');
@@ -223,6 +223,10 @@ const RegistroAsistencia = () => {
         window.open(AUSENCIAS_SEMANA_URL, '_blank');
     };
 
+    const descargarAusenciasHistorico = () => {
+        window.open(AUSENCIAS_HISTORICO_URL, '_blank');
+    };
+
     return (
         <div className="container">
             <div className="form-container">
@@ -279,9 +283,7 @@ const RegistroAsistencia = () => {
                     Descargar Ausentes (Hoy)
                 </button> */}
 
-                <button onClick={descargarAusenciasSemanales} className="download-button">
-                    Descargar Reporte Semanales
-                </button>
+                
 
             </div>
 
@@ -323,6 +325,15 @@ const RegistroAsistencia = () => {
                     ))}
                 </div>
             )}
+
+                <button onClick={descargarAusenciasSemanales} className="download-button">
+                    Descargar Reporte Semanales
+                </button>
+
+                <button onClick={descargarAusenciasHistorico} className="download-button">
+                    Descargar Reporte Historico
+                </button>
+
         </div>
     );
 };
