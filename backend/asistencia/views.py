@@ -9,6 +9,8 @@ import logging
 import pandas as pd
 from django.http import JsonResponse
 import os
+from datetime import timedelta
+from io import BytesIO
 # from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -119,9 +121,10 @@ def buscar_persona(request):
         return JsonResponse({'error': f'Error al buscar en el archivo: {str(e)}'}, status=500)    
 
 def exportar_reporte_excel(request):
+    fecha_hoy = localdate().strftime("%Y-%m-%d")
     response = HttpResponse(
         content_type='text/csv',
-        headers={'Content-Disposition': 'attachment; filename="reporte_asistencia.csv"'},
+        headers={'Content-Disposition': f'attachment; filename="reporte_asistencia_{fecha_hoy}.csv"'},
     )
 
     writer = csv.writer(response)
@@ -164,9 +167,73 @@ def generar_reporte_ausentes(request):
     df = pd.DataFrame(data)
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=ausentes_{hoy.strftime("%Y%m%d")}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename=ausentes_{hoy.strftime("%Y-%m-%d")}.xlsx'
 
     with pd.ExcelWriter(response, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Ausentes')
 
     return response
+
+def generar_reporte_ausencias_semanal(request):
+    hoy = localdate()
+    dia_actual = hoy.weekday()  # lunes = 0, domingo = 6
+
+    # Calcular lunes de la semana actual
+    if dia_actual == 6:  # Si es domingo, ir al lunes anterior
+        inicio_semana = hoy - timedelta(days=6)
+    else:
+        inicio_semana = hoy - timedelta(days=dia_actual)
+
+    # Crear lista de lunes a sábado
+    dias_semana = [inicio_semana + timedelta(days=i) for i in range(6)]
+
+    # Obtener todas las personas
+    personas = Persona.objects.all()
+
+    data = []
+    for persona in personas:
+        fila = {
+            'NIT': persona.nit,
+            'Nombre': persona.nombre,
+            'Cargo': persona.cargo,
+            'Dependencia': persona.dependencia,
+        }
+
+        for dia in dias_semana:
+            registros = RegistroAsistencia.objects.filter(persona=persona, fecha=dia)
+            if registros.exists():
+                registro = registros.first()  # Asumimos un registro por día
+                entrada = registro.hora_entrada.strftime('%H:%M') if registro.hora_entrada else ''
+                salida = registro.hora_salida.strftime('%H:%M') if registro.hora_salida else ''
+                duracion = registro.tiempo_trabajado() if registro.hora_salida else ''
+                fila[dia.strftime('%A')] = f"{entrada} - {salida} ({duracion})"
+            else:
+                fila[dia.strftime('%A')] = '❌'
+
+        data.append(fila)
+
+    # Crear DataFrame
+    df = pd.DataFrame(data)
+
+    # Renombrar columnas de días a español
+    df.rename(columns={
+        'Monday': 'Lunes',
+        'Tuesday': 'Martes',
+        'Wednesday': 'Miércoles',
+        'Thursday': 'Jueves',
+        'Friday': 'Viernes',
+        'Saturday': 'Sábado',
+    }, inplace=True)
+
+    # Crear archivo Excel en memoria
+    output = BytesIO()
+    df.to_excel(output, index=False)
+    output.seek(0)
+
+    # Generar nombre de archivo con rango semanal
+    nombre_archivo = f"ausencias_semanales_{dias_semana[0]}_al_{dias_semana[-1]}.xlsx"
+
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename={nombre_archivo}'
+    return response
+

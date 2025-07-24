@@ -6,6 +6,7 @@ const API = 'http://localhost:8000/registros/';
 const SEARCH_URL = 'http://localhost:8000/buscar-persona/';
 const REPORT_URL = 'http://localhost:8000/reporte-excel/';
 const AUSENTES_URL = 'http://localhost:8000/reporte-ausentes/';
+const AUSENCIAS_SEMANA_URL = 'http://localhost:8000/reporte-ausencias-semanal/';
 
 
 const RegistroAsistencia = () => {
@@ -218,9 +219,14 @@ const RegistroAsistencia = () => {
         window.open(AUSENTES_URL, '_blank');
     };
 
+    const descargarAusenciasSemanales = () => {
+        window.open(AUSENCIAS_SEMANA_URL, '_blank');
+    };
+
     return (
         <div className="container">
             <div className="form-container">
+                <h1>ELABORADO SEBASTIAN DAVID MELO DIAZ </h1>
                 <h2>Registro de Asistencia</h2>
                 <form onSubmit={handleSubmit} className="form">
                     <div className="input-container">
@@ -265,12 +271,16 @@ const RegistroAsistencia = () => {
                 {mensaje && <p className="success">{mensaje}</p>}
                 {error && <p className="error">{error}</p>}
 
-                <button onClick={descargarExcel} className="download-button">
+                {/* <button onClick={descargarExcel} className="download-button">
                     Descargar Reporte Excel
-                </button>
+                </button> */}
 
-                <button onClick={descargarAusentes} className="download-button">
+                {/* <button onClick={descargarAusentes} className="download-button">
                     Descargar Ausentes (Hoy)
+                </button> */}
+
+                <button onClick={descargarAusenciasSemanales} className="download-button">
+                    Descargar Reporte Semanales
                 </button>
 
             </div>
