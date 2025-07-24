@@ -4,12 +4,11 @@ from django.utils.timezone import localtime, now, localdate
 from .models import Persona, RegistroAsistencia
 from .serializers import RegistroAsistenciaSerializer
 import csv
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 import logging
 import pandas as pd
-from django.http import JsonResponse
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 from io import BytesIO
 # from django.conf import settings
 
@@ -176,21 +175,15 @@ def generar_reporte_ausentes(request):
 
 def generar_reporte_ausencias_semanal(request):
     hoy = localdate()
-    dia_actual = hoy.weekday()  # lunes = 0, domingo = 6
+    dia_actual = hoy.weekday()  # lunes=0, domingo=6
 
-    # Calcular lunes de la semana actual
-    if dia_actual == 6:  # Si es domingo, ir al lunes anterior
-        inicio_semana = hoy - timedelta(days=6)
-    else:
-        inicio_semana = hoy - timedelta(days=dia_actual)
+    # Obtener el lunes de la semana actual (o anterior si es domingo)
+    inicio_semana = hoy - timedelta(days=dia_actual if dia_actual < 6 else 6)
+    dias_semana = [inicio_semana + timedelta(days=i) for i in range(6)]  # Lunes a Sábado
 
-    # Crear lista de lunes a sábado
-    dias_semana = [inicio_semana + timedelta(days=i) for i in range(6)]
-
-    # Obtener todas las personas
     personas = Persona.objects.all()
-
     data = []
+
     for persona in personas:
         fila = {
             'NIT': persona.nit,
@@ -199,23 +192,40 @@ def generar_reporte_ausencias_semanal(request):
             'Dependencia': persona.dependencia,
         }
 
+        total_horas_semana = 0.0
+
         for dia in dias_semana:
             registros = RegistroAsistencia.objects.filter(persona=persona, fecha=dia)
             if registros.exists():
-                registro = registros.first()  # Asumimos un registro por día
+                registro = registros.first()  # Se asume un registro por día
                 entrada = registro.hora_entrada.strftime('%H:%M') if registro.hora_entrada else ''
                 salida = registro.hora_salida.strftime('%H:%M') if registro.hora_salida else ''
-                duracion = registro.tiempo_trabajado() if registro.hora_salida else ''
-                fila[dia.strftime('%A')] = f"{entrada} - {salida} ({duracion})"
-            else:
-                fila[dia.strftime('%A')] = '❌'
 
+                if registro.hora_entrada and registro.hora_salida:
+                    entrada_dt = datetime.combine(dia, registro.hora_entrada)
+                    salida_dt = datetime.combine(dia, registro.hora_salida)
+                    duracion = salida_dt - entrada_dt
+                    total_segundos = int(duracion.total_seconds())
+                    horas = total_segundos // 3600
+                    minutos = (total_segundos % 3600) // 60
+
+                    # Para sumar al total de la semana (en minutos)
+                    total_horas_semana += total_segundos
+                    fila[dia.strftime('%A')] = f"{entrada} - {salida} ({horas}h {minutos}min)"
+                else:
+                    fila[dia.strftime('%A')] = f"{entrada} - {salida} (0h)"
+            else:
+                fila[dia.strftime('%A')] = "❌"
+
+        total_seg = int(total_horas_semana)
+        total_horas = total_seg // 3600
+        total_min = (total_seg % 3600) // 60
+        fila["Total Horas Semana"] = f"{total_horas}h {total_min}min"
         data.append(fila)
 
-    # Crear DataFrame
     df = pd.DataFrame(data)
 
-    # Renombrar columnas de días a español
+    # Renombrar los días al español
     df.rename(columns={
         'Monday': 'Lunes',
         'Tuesday': 'Martes',
@@ -225,15 +235,16 @@ def generar_reporte_ausencias_semanal(request):
         'Saturday': 'Sábado',
     }, inplace=True)
 
-    # Crear archivo Excel en memoria
     output = BytesIO()
     df.to_excel(output, index=False)
     output.seek(0)
 
-    # Generar nombre de archivo con rango semanal
     nombre_archivo = f"ausencias_semanales_{dias_semana[0]}_al_{dias_semana[-1]}.xlsx"
 
-    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     response['Content-Disposition'] = f'attachment; filename={nombre_archivo}'
     return response
 
